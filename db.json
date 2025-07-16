@@ -1,0 +1,30 @@
+{
+  "companies": [],
+  "integrations": [
+    {
+      "id": "aws",
+      "integrationName": "AWS",
+      "integrationLogo": "gcp.png"
+    },
+    {
+      "id": "gcp",
+      "integrationName": "GCP",
+      "integrationLogo": "gcp.png"
+    },
+    {
+      "id": "azure",
+      "integrationName": "Azure",
+      "integrationLogo": "microsoft.png"
+    },
+    {
+      "id": "bitbucket",
+      "integrationName": "Bitbucket",
+      "integrationLogo": "bitbucket.png"
+    },
+    {
+      "id": "oracle",
+      "integrationName": "Oracle",
+      "integrationLogo": "oracle.png"
+    }
+  ]
+}
