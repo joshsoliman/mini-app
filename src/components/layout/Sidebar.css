@@ -1,0 +1,23 @@
+.sidebar {
+  width: 80px;
+  height: 100vh;
+  background-color: #10475E;
+}
+
+/* default = white icon + text */
+.sidebar-link {
+  color: #FFFFFF;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+/* make the SVG inherit the text color */
+.sidebar-link svg {
+  color: currentColor;
+  margin-bottom: 4px;
+}
+
+/* active = gold icon + text */
+.sidebar-link.active {
+  color: #FFC107;
+}
