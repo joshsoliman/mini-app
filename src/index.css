@@ -16,14 +16,12 @@
 }
 
 .btn-primary {
-  /* 2. Ensure primary buttons use it */
   background-color: var(--bs-primary) !important;
   border-color:     var(--bs-primary) !important;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
-  /* 3. Tweak hover slightly darker if you like */
   background-color: #112f4a !important;
   border-color:     #112f4a !important;
 }
@@ -39,8 +37,6 @@ a:hover {
 
 body {
   margin: 0;
-  /* display: flex;
-  place-items: center; */
   min-width: 320px;
   min-height: 100vh;
 }

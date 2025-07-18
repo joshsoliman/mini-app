@@ -1,6 +1,4 @@
-// src/pages/companies/CompaniesPage.tsx
-import React, { useState, useEffect } from 'react'
-import type { KeyboardEvent } from 'react'
+import React, { useState, useEffect, type KeyboardEvent } from 'react'
 import {
   Container,
   Row,
@@ -16,218 +14,247 @@ import AddCompanyModal from '../../components/Modals/AddCompanyModal'
 import EditCompanyModal from '../../components/Modals/EditCompanyModal'
 import DeleteCompanyModal from '../../components/Modals/DeleteCompanyModal'
 
-export interface Integration {
+interface Integration {
   integrationName: string
   integrationLogo: string
 }
-export interface Company {
-  id?: number
+
+interface Company {
+  id?: number | string
   companyName: string
   integrations: Integration[]
 }
 
-const API_URL = 'http://localhost:5001'
+type NewCompanyPayload = {
+  name: string
+  integrations: Array<{ name: string; logo: string }>
+}
+
+const CompanyAvatar: React.FC<{ name: string }> = ({ name }) => {
+  const initials = name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+  return (
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        backgroundColor: '#10475E',
+        color: '#fff',
+        borderRadius: 4,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        fontSize: '0.9rem',
+      }}
+    >
+      {initials}
+    </div>
+  )
+}
 
 const CompaniesPage: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchText, setSearchText] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [showAdd, setShowAdd] = useState(false)
-
-  const [selected, setSelected] = useState<Company | null>(null)
-  const [showEdit, setShowEdit]     = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
 
-    useEffect(() => {
+  useEffect(() => {
     document.title = 'Companies'
-    loadCompanies()
+    loadAllCompanies()
   }, [])
 
-  const loadCompanies = () => {
-    fetch(`${API_URL}/companies`)
-      .then(res => res.json())
-      .then(setCompanies)
+  const loadAllCompanies = () => {
+    setLoading(true)
+    setError(null)
+    fetch('/api/companies')
+      .then(res => {
+        if (!res.ok) throw new Error(`Error ${res.status}`)
+        return res.json() as Promise<Company[]>
+      })
+      .then(data => setCompanies(data))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }
+
+  const handleAdd = (payload: NewCompanyPayload) => {
+    const postBody = {
+      companyName: payload.name,
+      integrations: payload.integrations.map(i => ({ integrationName: i.name, integrationLogo: i.logo })),
+    }
+    fetch('/api/companies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(postBody),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`Add failed: ${res.status}`)
+        return res.json()
+      })
+      .then(() => {
+        setShowAdd(false)
+        loadAllCompanies()
+      })
       .catch(console.error)
   }
 
-  useEffect(() => {
-    loadCompanies()
-  }, [])
-
-  const handleCreate = (company: Omit<Company, 'id'>) => {
-    fetch(`${API_URL}/companies`, {
-      method: 'POST',
+  const handleEdit = (company: Company) => {
+    if (!company.id) return
+    fetch(`/api/companies/${company.id}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(company),
     })
-      .then(res => res.json())
-      .then(() => {
-        setShowAdd(false)
-        loadCompanies()
+      .then(res => {
+        if (!res.ok) throw new Error(`Update failed: ${res.status}`)
+        return res.json()
       })
-      .catch(console.error)
-  }
-
-  const handleSave = (updated: Company) => {
-    if (!updated.id) return
-    fetch(`${API_URL}/companies/${updated.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated),
-    })
-      .then(res => res.json())
       .then(() => {
         setShowEdit(false)
-        setSelected(null)
-        loadCompanies()
+        setSelectedCompany(null)
+        loadAllCompanies()
       })
       .catch(console.error)
   }
 
-  const handleDelete = (toDelete: Company) => {
-    if (!toDelete.id) return
-    fetch(`${API_URL}/companies/${toDelete.id}`, {
-      method: 'DELETE',
-    })
+  const handleDelete = (company: Company) => {
+    if (!company.id) return
+    fetch(`/api/companies/${company.id}`, { method: 'DELETE' })
+      .then(res => {
+        if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
+      })
       .then(() => {
         setShowDelete(false)
-        setSelected(null)
-        loadCompanies()
+        setSelectedCompany(null)
+        loadAllCompanies()
       })
-      .catch(console.error)
+      .catch(err => alert(`Delete error: ${err.message}`))
   }
 
-  // filter locally
-  const filtered = companies.filter(c =>
-    c.companyName.toLowerCase().includes(searchTerm.toLowerCase())
+  const visibleCompanies = companies.filter(c =>
+    c.companyName.toLowerCase().includes(searchText.toLowerCase())
   )
 
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const blockEnter = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') e.preventDefault()
   }
 
   return (
     <Container fluid className="pt-4 px-4">
-      {/* Header with Add + Search below */}
-      <Row className="align-items-start mb-3">
+      <Row className="mb-3">
         <Col>
-          <h2>Companies ({filtered.length})</h2>
+          <h2>Companies ({visibleCompanies.length})</h2>
         </Col>
-        <Col className="d-flex flex-column align-items-end">
-          <Button onClick={() => setShowAdd(true)}>+ Add Company</Button>
-          <InputGroup className="mt-2" style={{ width: 300 }}>
+        <Col className="d-flex flex-column align-items-end gap-2">
+          <Button onClick={() => setShowAdd(true)}>Add Company</Button>
+          <InputGroup style={{ width: 280 }}>
             <InputGroup.Text
-              style={{
-                backgroundColor: '#16324F',  // same as your Add button
-                color: 'white',
-                border: 'none',
-                borderTopLeftRadius: '.375rem',
-                borderBottomLeftRadius: '.375rem',
-              }}
+              style={{ backgroundColor: '#10475E', color: '#fff', border: 'none', cursor: 'pointer' }}
             >
               <FaSearch />
             </InputGroup.Text>
             <FormControl
-              placeholder="Search"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onKeyDown={onKeyDown}
-              style={{
-                borderTopRightRadius: '.375rem',
-                borderBottomRightRadius: '.375rem',
-                borderLeft: 'none',
-              }}
+              placeholder="Search companies"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              onKeyDown={blockEnter}
             />
           </InputGroup>
-
         </Col>
       </Row>
 
-      {/* Table */}
-      <Table hover>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Integrations</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((c) => (
-            <tr key={c.id}>
-              <td>{c.companyName}</td>
-              <td>
-                {c.integrations.map((i) => (
-                  <img
-                    key={i.integrationName}
-                    src={i.integrationLogo}
-                    alt={i.integrationName}
-                    style={{ height: 24, marginRight: 8 }}
-                  />
-                ))}
-              </td>
-              <td>
-                <Dropdown align="end">
-                  <Dropdown.Toggle
-                    variant="link"
-                    bsPrefix="p-0 border-0"
-                    id={`actions-${c.id}`}
-                   style={{ background: 'transparent' }}
-                  >
-                    <FaEllipsisV style={{ color: '#16324F' }} />
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu>
-                    <Dropdown.Item
-                      onClick={() => {
-                        setSelected(c)
-                        setShowEdit(true)
-                      }}
-                    >
-                      Edit
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      onClick={() => {
-                        setSelected(c)
-                        setShowDelete(true)
-                      }}
-                    >
-                      Delete
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              </td>
+      {loading ? (
+        <div>Loading companies…</div>
+      ) : error ? (
+        <div className="text-danger">Error: {error}</div>
+      ) : (
+        <Table hover>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Integrations</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {visibleCompanies.map(company => (
+              <tr key={company.id ?? company.companyName}>
+                <td>
+                  <div className="d-flex align-items-center">
+                    <CompanyAvatar name={company.companyName} />
+                    <span className="ms-2" style={{ fontWeight: 600, fontSize: '1rem', color: '#1E3A5F' }}>
+                      {company.companyName}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  {company.integrations.map(intg => (
+                    <img
+                      key={intg.integrationName}
+                      src={intg.integrationLogo}
+                      alt={intg.integrationName}
+                      style={{ height: 40, width: 40, objectFit: 'contain', marginRight: 12 }}
+                    />
+                  ))}
+                </td>
+                <td>
+                  <Dropdown align="end">
+                    <Dropdown.Toggle
+                      variant="link"
+                      className="p-0"
+                      style={{ backgroundColor: 'transparent' }}
+                    >
+                      <FaEllipsisV style={{ color: '#10475E' }} />
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu>
+                      <Dropdown.Item
+                        onClick={() => {
+                          setSelectedCompany(company)
+                          setShowEdit(true)
+                        }}
+                      >
+                        Edit
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => {
+                          setSelectedCompany(company)
+                          setShowDelete(true)
+                        }}
+                      >
+                        Delete
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
 
-      {/* Modals */}
-      <AddCompanyModal
-        show={showAdd}
-        onHide={() => setShowAdd(false)}
-        onCreate={handleCreate}
-      />
-
-    {selected && (
-      <EditCompanyModal
-        show={showEdit}
-        company={selected}
-        onHide={() => {
-          setShowEdit(false)
-          setSelected(null)
-        }}
-        onSave={handleSave}
-      />
-    )}
-
-      {selected && (
+      <AddCompanyModal show={showAdd} onHide={() => setShowAdd(false)} onCreate={handleAdd} />
+      {selectedCompany && (
+        <EditCompanyModal
+          show={showEdit}
+          onHide={() => setShowEdit(false)}
+          company={selectedCompany}
+          onSave={handleEdit}
+        />
+      )}
+      {selectedCompany && (
         <DeleteCompanyModal
           show={showDelete}
-          companyName={selected.companyName}
-          onHide={() => {
-            setShowDelete(false)
-            setSelected(null)
-          }}
-          onDelete={() => handleDelete(selected)}
+          companyName={selectedCompany.companyName}
+          onHide={() => setShowDelete(false)}
+          onDelete={() => handleDelete(selectedCompany)}
         />
       )}
     </Container>

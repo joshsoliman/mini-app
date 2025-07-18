@@ -1,4 +1,4 @@
-// Layout.tsx
+
 import React from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { Navbar, Nav, Container } from 'react-bootstrap'
@@ -7,7 +7,6 @@ import logo from '../assets/logo.png'
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="d-flex flex-column" style={{ minHeight: '100vh' }}>
-    {/* Topbar spans full width and has zero horizontal padding */}
     <Navbar
       bg="light"
       expand="lg"
@@ -18,12 +17,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         fluid
         className="d-flex align-items-center justify-content-between px-0"
       >
-        {/* Brand with extra left margin (ms-3 ≈ 1rem / 16px) */}
         <Navbar.Brand href="/" className="p-0 m-0 ms-4">
           <img src={logo} alt="SaaSConsole" height={28} />
         </Navbar.Brand>
 
-        {/* Avatar on the right */}
         <Nav className="pe-3">
           <div
             className="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
@@ -35,7 +32,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
       </Container>
     </Navbar>
 
-    {/* Sidebar + content */}
     <div className="d-flex flex-grow-1">
       <Sidebar />
 

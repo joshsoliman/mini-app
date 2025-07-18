@@ -1,16 +1,13 @@
-// src/components/Modals/EditCompanyModal.tsx
 import React, { useEffect, useState } from 'react'
 import { Modal, Button, Form, FormControl } from 'react-bootstrap'
 import Select from 'react-select'
 import { FaChevronDown } from 'react-icons/fa'
 
-// import your parent types
 import type {
   Company as ParentCompany,
   Integration as ParentIntegration,
 } from '../../pages/companies/CompaniesPage'
 
-// import your logos
 import bitbucketIcon from '../../assets/bitbucket.png'
 import microsoftIcon from '../../assets/microsoft.png'
 import oracleIcon    from '../../assets/oracle.png'

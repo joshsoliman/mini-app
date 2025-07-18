@@ -1,62 +1,62 @@
-// src/components/Modals/AddCompanyModal.tsx
 import React from 'react'
 import { Modal, Button, Form } from 'react-bootstrap'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import Select from 'react-select'
+import type { MultiValue, GroupBase } from 'react-select'
 
-import bitbucketIcon from '../../assets/bitbucket.png'
-import gcpIcon       from '../../assets/gcp.png'
-import microsoftIcon from '../../assets/microsoft.png'
-import oracleIcon    from '../../assets/oracle.png'
+import bitbucketLogo from '../../assets/bitbucket.png'
+import gcpLogo       from '../../assets/gcp.png'
+import microsoftLogo from '../../assets/microsoft.png'
+import oracleLogo    from '../../assets/oracle.png'
 
 interface IntegrationOption {
   value: string
   label: string
-  logo: string
+  logoUrl: string
 }
 
-const integrationOptions = [
-  { value: 'Bitbucket', label: 'Bitbucket', logo: bitbucketIcon },
-  { value: 'GCP',       label: 'GCP',       logo: gcpIcon },
-  { value: 'Microsoft', label: 'Microsoft', logo: microsoftIcon },
-  { value: 'Oracle',    label: 'Oracle',    logo: oracleIcon },
+const INTEGRATION_CHOICES: IntegrationOption[] = [
+  { value: 'Bitbucket', label: 'Bitbucket', logoUrl: bitbucketLogo },
+  { value: 'GCP',       label: 'GCP',       logoUrl: gcpLogo       },
+  { value: 'Microsoft', label: 'Microsoft', logoUrl: microsoftLogo },
+  { value: 'Oracle',    label: 'Oracle',    logoUrl: oracleLogo    },
 ]
-
-export interface Integration {
-  integrationName: string
-  integrationLogo: string
-}
-export interface Company {
-  companyName: string
-  integrations: Integration[]
-}
-
-interface Props {
+interface AddCompanyModalProps {
   show: boolean
   onHide: () => void
-  onCreate: (company: Company) => void
+  onCreate: (company: { name: string; integrations: { name: string; logo: string }[] }) => void
 }
 
-const AddCompanyModal: React.FC<Props> = ({ show, onHide, onCreate }) => {
+
+const IntegrationSelector: React.FC<{ selected: IntegrationOption[]; onChange: (opts: MultiValue<IntegrationOption>) => void }> = ({ selected, onChange }) => (
+  <Form.Group controlId="integrations" className="mb-3">
+    <Form.Label>Choose Integrations</Form.Label>
+    <Select<IntegrationOption, true, GroupBase<IntegrationOption>>
+      isMulti
+      options={INTEGRATION_CHOICES}
+      value={selected}
+      getOptionLabel={(opt) => opt.label}
+      formatOptionLabel={(opt) => (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img src={opt.logoUrl} alt={opt.label} style={{ width: 18, marginRight: 6 }} />
+          {opt.label}
+        </div>
+      )}
+      onChange={onChange}
+      placeholder="Select one or more..."
+    />
+  </Form.Group>
+)
+
+const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ show, onHide, onCreate }) => {
   const formik = useFormik({
-    initialValues: {
-      companyName: '',
-      integrations: [] as IntegrationOption[],
-    },
-    validationSchema: Yup.object({
-      companyName: Yup.string().required('Company name is required'),
-    }),
-    onSubmit: (values) => {
-      const payload: Company = {
-        companyName: values.companyName,
-        integrations: values.integrations.map(opt => ({
-          integrationName: opt.value,
-          integrationLogo: opt.logo,
-        })),
-      }
-      onCreate(payload)
+    initialValues: { companyName: '', integrations: [] as IntegrationOption[] },
+    validationSchema: Yup.object({ companyName: Yup.string().trim().required('Please enter a company name') }),
+    onSubmit: ({ companyName, integrations }) => {
+      onCreate({ name: companyName, integrations: integrations.map(opt => ({ name: opt.value, logo: opt.logoUrl })) })
       formik.resetForm()
+      onHide()
     },
   })
 
@@ -64,13 +64,14 @@ const AddCompanyModal: React.FC<Props> = ({ show, onHide, onCreate }) => {
     <Modal show={show} onHide={onHide} centered>
       <Form onSubmit={formik.handleSubmit}>
         <Modal.Header closeButton>
-          <Modal.Title>Add Company</Modal.Title>
+          <Modal.Title>Create New Company</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group controlId="companyName" className="mb-3">
-            <Form.Label>Name *</Form.Label>
+            <Form.Label>Company Name *</Form.Label>
             <Form.Control
               type="text"
+              
               {...formik.getFieldProps('companyName')}
               isInvalid={!!formik.errors.companyName && formik.touched.companyName}
             />
@@ -79,33 +80,18 @@ const AddCompanyModal: React.FC<Props> = ({ show, onHide, onCreate }) => {
             </Form.Control.Feedback>
           </Form.Group>
 
-          <Form.Group controlId="integrations">
-            <Form.Label>Integrations</Form.Label>
-            <Select<IntegrationOption, true>
-              isMulti
-              options={integrationOptions}
-              // simple string label for accessibility & filtering:
-              getOptionLabel={(o) => o.label}
-              getOptionValue={(o) => o.value}
-              // here’s where you render the logo + text:
-              formatOptionLabel={(o) => (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <img
-                    src={o.logo}
-                    alt={o.label}
-                    style={{ width: 20, marginRight: 8 }}
-                  />
-                  {o.label}
-                </div>
-              )}
-              onChange={(opts) => formik.setFieldValue('integrations', opts)}
-              value={formik.values.integrations}
-            />
-          </Form.Group>
+          <IntegrationSelector
+            selected={formik.values.integrations}
+            onChange={(opts) => formik.setFieldValue('integrations', opts)}
+          />
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>Cancel</Button>
-          <Button type="submit">Create</Button>
+          <Button variant="outline-secondary" onClick={() => { formik.resetForm(); onHide() }}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary">
+            Add Company
+          </Button>
         </Modal.Footer>
       </Form>
     </Modal>
